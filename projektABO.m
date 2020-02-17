@@ -1,0 +1,188 @@
+close
+clear
+clc
+%% Naètení dat
+% im=imread('seq0026.png');
+% im=imread('seq0027.png');
+% im=imread('seq0028.png');
+% im=imread('seq0029.png');
+% im=imread('seq0030.png');
+% im=imread('seq0031.png');
+% im=imread('seq0032.png');
+% im=imread('seq0033.png');
+% im=imread('seq0034.png');
+im=imread('seq0035.png');
+% im=imread('seq0036.png');
+% im=imread('seq0037.png');
+% im=imread('seq0038.png');
+% im=imread('seq0039.png');
+
+[a,b,~]=size(im);
+
+% Fotky jsou z mikroskopu s fázovým kontrastem
+% -> buòky mají vìtšinou ostré okraje
+% -> pozadí je svìtle žluté
+% Zvìtšení 100x
+% Je tam hafo ery
+% JEDNEN leu
+% shluky i jednotlivé thr
+
+%% Zobrazení
+%imshow(im)
+
+%% Ekvalizace
+im_eq=histeq(im);
+
+% imshow(im_eq);
+
+% Podrobné vykreslení
+% figure
+% subplot(221)
+% imshow(im)
+% title('Originál')
+% subplot(222)
+% histogram(im)
+% title('Originální histogram')
+% subplot(223)
+% imshow(im_eq)
+% title('Po ekvalizaci')
+% subplot(224)
+% histogram(im_eq)
+% title('Histogram po ekvalizaci')
+
+ %% Gradienty
+% A=zeros(a-1,b);
+% B=zeros(a,b-1);
+% for i=2:1920
+%     for j=1:2560
+%         A(i,j)=im_gr(i,j)-im_gr(i-1,j);
+%     end
+% end
+% 
+% for i=1:1920
+%     for j=2:2560
+%         B(i,j)=im_gr(i,j)-im_gr(i,j-1);
+%     end
+% end
+% 
+% A=A(1:1919,1:2559);
+% B=B(1:1919,1:2559);
+% C=sqrt(A.^2+B.^2);
+% 
+% figure
+% imshow(C)
+% title('Obraz gradientù v smìru x a y')
+
+%% Zváraznìní hran
+% D=zeros(a,b);
+% kvoc=0.8;
+% for r=1:a/10:a
+%     for s=1:b/10:b
+%         pom=im_eq(r:r+a/10-1,s:s+b/10-1);
+%         pom1=kvoc*mean(mean(pom));
+%         pom(pom>pom1)=255;
+%         pom(pom<pom1)=0;
+%         pom=255-pom;
+%         D(r:r+a/10-1,s:s+b/10-1)=pom;
+%     end
+% end
+
+
+
+
+
+
+%% Imfindcircles
+% 1. krok na šedotónovém obraze
+im_gr=rgb2gray(im_eq);
+im_gr=im_gr>70;
+im_gr=(gpuArray(im_gr));
+
+[k,l,m]=imfindcircles(im_gr,[50 90],'ObjectPolarity','dark','Method','TwoStage','Sensitivity',0.95);
+% [k1,l1,m1]=imfindcircles(im_gr,[100 150],'ObjectPolarity','dark','Method','TwoStage','Sensitivity',0.87);
+% [k2,l2,m2]=imfindcircles(im_gr,[150 300],'ObjectPolarity','dark','Method','TwoStage','Sensitivity',0.87);
+[k,l]=vzdalenosti(k,l,1.5);
+k=round(k);
+
+figure
+imshow(im_eq,[])
+hold on
+viscircles(k,l,'EdgeColor','b')
+% hold on
+% viscircles(k1,l1,'EdgeColor','b')
+% hold on
+% viscircles(k2,l2,'EdgeColor','r')
+%%
+% 2. krok na a-protaženém obraze
+% 
+% K3=[];
+% L3=[];
+% for akvoc=1:0.25:2
+%     im_a_resiz=imresize(im_gr,[a*akvoc,b]);
+% 
+%     [k3,l3]=imfindcircles(im_a_resiz,[round(50) round(90)],'ObjectPolarity','dark','Method','TwoStage','Sensitivity',0.87);
+%      k3(:,2)=k3(:,2)./akvoc;
+%     K3=[K3;k3];
+%     L3=[L3,l3'];
+% end
+% 
+% % K3=K3';
+%  L3=L3';
+% % % Ilustrace
+% % akvoc=1.5;
+% % im_a_resiz=imresize(im_gr,[a*akvoc,b]);
+% % 
+% % [k3,l3,m3]=imfindcircles(im_a_resiz,[75 150],'ObjectPolarity','dark','Method','TwoStage','Sensitivity',0.87);
+% % 
+% % figure
+% % imshow(im_a_resiz,[])
+% % hold on
+% % viscircles(k3,l3,'EdgeColor','b')
+% % 
+% % k3(:,2)=round(k3/akvoc);
+% 
+% % 3. krok na b-protaženém obraze
+% K4=[];
+% L4=[];
+% for bkvoc=1:0.25:2
+%     im_b_resiz=imresize(im_gr,[a,b*bkvoc]);
+% 
+%     [k4,l4]=imfindcircles(im_b_resiz,[round(50) round(90)],'ObjectPolarity','dark','Method','TwoStage','Sensitivity',0.87);
+%     k4(:,1)=k4(:,1)./bkvoc;
+%     K4=[K4;k4];
+%     L4=[L4,l4'];
+% end
+% 
+% % K4=K4';
+% L4=L4';
+% 
+% K=[k; K3; K4];
+% L=[l ; L3 ; L4];
+% %%
+% imshow(im_eq,[]);
+% hold on
+%  viscircles(K,L,'EdgeColor','b')
+%  
+%  
+%  
+% % % Ilustrace
+% % bkvoc=1.5;
+% % im_b_resiz=imresize(im_gr,[a,b*bkvoc]);
+% % 
+% % [k4,l4,m4]=imfindcircles(im_b_resiz,[75 150],'ObjectPolarity','dark','Method','TwoStage','Sensitivity',0.87);
+% % 
+% % figure
+% % imshow(im_b_resiz,[])
+% % hold on
+% % viscircles(k4,l4,'EdgeColor','b')
+% % 
+% % k4(:,1)=round(k4/bkvoc);
+% 
+% 
+% 
+
+
+
+
+
+
